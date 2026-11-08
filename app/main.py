@@ -11,15 +11,18 @@ from app import db
 from app.cache import TTLCache
 from app.config import (
     CACHE_ENABLED, CACHE_TTL_SECONDS, CHEAP_MODEL, DEFAULT_MONTHLY_LIMIT,
-    GATEWAY_API_KEY, STRONG_MODEL, USE_MOCK,
+    GATEWAY_API_KEY, MAX_PROMPT_CHARS, RATE_LIMIT_PER_MINUTE, STRONG_MODEL,
+    USE_MOCK,
 )
 from app.pricing import calculate_cost
 from app.providers.groq_provider import ProviderError, call_groq
 from app.providers.mock_provider import call_mock
+from app.ratelimit import RateLimiter
 from app.routing.policies import choose_model
 from app.schemas import ChatRequest, ChatResponse
 
 cache = TTLCache(ttl=CACHE_TTL_SECONDS, max_items=1000)
+limiter = RateLimiter(window=60.0)
 
 
 @asynccontextmanager
@@ -93,6 +96,22 @@ async def call_with_fallback(model: str, prompt: str):
 
 @app.post("/v1/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest, caller: Caller = Depends(authenticate)):
+    if len(req.prompt) > MAX_PROMPT_CHARS:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Prompt too long: {len(req.prompt)} characters (maximum {MAX_PROMPT_CHARS}).",
+        )
+
+    if caller.id not in ("owner", "local"):
+        wait = limiter.check(caller.id, RATE_LIMIT_PER_MINUTE)
+        if wait:
+            raise HTTPException(
+                status_code=429,
+                detail=f"Rate limit exceeded ({RATE_LIMIT_PER_MINUTE} requests per minute). "
+                       f"Retry in {wait} seconds.",
+                headers={"Retry-After": str(wait)},
+            )
+
     if caller.limit is not None and db.count_month(caller.id) >= caller.limit:
         raise HTTPException(status_code=429, detail="Monthly request limit reached")
 
@@ -118,7 +137,11 @@ async def chat(req: ChatRequest, caller: Caller = Depends(authenticate)):
         latency_ms = (time.perf_counter() - start) * 1000
         db.log_request(req.policy, model, reason, 0, 0, latency_ms, 0.0,
                        f"error: {e}"[:200], caller.id)
-        raise HTTPException(status_code=502, detail=str(e))
+        # the real error is in your logs; customers get a generic message
+        raise HTTPException(
+            status_code=502,
+            detail="The model provider is temporarily unavailable. Please try again shortly.",
+        )
     latency_ms = (time.perf_counter() - start) * 1000
 
     if fallback_note:
@@ -181,7 +204,7 @@ def all_usage():
 @app.get("/")
 def home():
     return {
-        "service": "LLM Router Gateway 😎",
+        "service": "LLM Router Gateway",
         "status": "ok",
         "docs": "/docs",
         "endpoint": "POST /v1/chat",
