@@ -14,3 +14,5 @@ REQUEST_TIMEOUT = 30.0
 BACKOFF_BASE = 1.0
 
 GATEWAY_API_KEY = os.getenv("GATEWAY_API_KEY", "")
+CACHE_ENABLED = os.getenv("CACHE_ENABLED", "true").lower() == "true"
+CACHE_TTL_SECONDS = int(os.getenv("CACHE_TTL_SECONDS", "3600"))

@@ -14,3 +14,4 @@ class ChatResponse(BaseModel):
     output_tokens: int
     latency_ms: float
     cost_usd: float
+    cached: bool = False
