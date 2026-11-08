@@ -181,7 +181,7 @@ def all_usage():
 @app.get("/")
 def home():
     return {
-        "service": "LLM Router Gateway",
+        "service": "LLM Router Gateway 😎",
         "status": "ok",
         "docs": "/docs",
         "endpoint": "POST /v1/chat",
