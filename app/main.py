@@ -19,7 +19,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="LLM Router Gateway", lifespan=lifespan)
+app = FastAPI(title="LLM Router Gateway", lifespan=lifespan, docs_url=None, redoc_url=None)
 
 
 def require_key(authorization: str = Header(default="")):
