@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>llm-routing: one endpoint for LLM calls</title>
+<title>SpillWay: one endpoint for LLM calls</title>
 <meta name="description" content="An OpenAI-compatible gateway with automatic fallback, a response cache, and per-key limits and usage.">
 <meta name="theme-color" content="#f4f1ea">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23e2411f'/%3E%3C/svg%3E">
@@ -95,6 +95,9 @@ footer{border-top:1px solid var(--line);padding:30px 0 50px;font-size:14px;color
   display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap}
 footer p{margin:0;max-width:40em}
 
+.wm{position:relative;overflow:hidden;height:clamp(90px,19vw,230px);margin-top:10px;user-select:none;pointer-events:none}
+.wm span{position:absolute;left:-.02em;bottom:-.22em;font:600 clamp(110px,26vw,320px)/1 var(--serif);letter-spacing:-.04em;color:var(--ink);opacity:.06;white-space:nowrap}
+
 @media (max-width:820px){
   :root{--gap:90px}
   .hero{grid-template-columns:1fr;padding-bottom:40px}
@@ -118,11 +121,11 @@ footer p{margin:0;max-width:40em}
 <div class="wrap">
 
 <nav>
-  <a class="mark" href="/"><i></i>llm-routing</a>
+  <a class="mark" href="/"><i></i>SpillWay</a>
   <div class="links">
     <a href="#quickstart">Docs</a>
     <a href="#pricing">Pricing</a>
-    <a class="btn" href="mailto:you@example.com?subject=API%20key%20request">Request a key</a>
+    <a class="btn" href="mailto:gogulavenkatapavankumar37@gmail.com?subject=API%20key%20request">Request a key</a>
   </div>
 </nav>
 
@@ -131,7 +134,7 @@ footer p{margin:0;max-width:40em}
     <h1>One endpoint for every LLM call.</h1>
     <p class="lead">An OpenAI-compatible gateway with automatic fallback, a response cache, and per-key limits and usage. Change the base URL and your app keeps working.</p>
     <div class="cta">
-      <a class="btn solid" href="mailto:you@example.com?subject=API%20key%20request">Request a key</a>
+      <a class="btn solid" href="mailto:gogulavenkatapavankumar37@gmail.com?subject=API%20key%20request">Request a key</a>
       <a class="btn" href="#quickstart">See the code</a>
     </div>
   </div>
@@ -202,19 +205,19 @@ print(r.choices[0].message.content)</pre>
 <section id="pricing">
   <h2>Pricing</h2>
   <div class="price">
-    <p class="big">Early access.</p>
+    <p class="big">₹799 a month.</p>
     <div>
-      <p>Trial keys include 100 requests. If it fits, we agree a monthly price based on your volume.</p>
-      <a class="btn solid" href="mailto:you@example.com?subject=API%20key%20request">Request a key</a>
+     <p>Every key starts with a free trial of 200 requests, no card needed. If it fits your app, we agree a simple monthly price.</p>
+      <a class="btn solid" href="mailto:gogulavenkatapavankumar37@gmail.com?subject=API%20key%20request">Request a key</a>
     </div>
   </div>
 </section>
 
 <footer>
   <p>We don't store prompt or answer text. For each request we log the model used, token counts, cost, latency and status.</p>
-  <a href="mailto:you@example.com">you@example.com</a>
+  <a href="mailto:gogulavenkatapavankumar37@gmail.com">gogulavenkatapavankumar37@gmail.com</a>
 </footer>
-
+<div class="wm" aria-hidden="true"><span>sluice</span></div>
 </div>
 <script>
 (function () {
