@@ -63,6 +63,14 @@ async def chat(req: ChatRequest):
         cost_usd=cost,
     )
 
+@app.get("/")
+def home():
+    return {
+        "service": "LLM Router Gateway",
+        "status": "ok",
+        "docs": "/docs",
+        "endpoint": "POST /v1/chat",
+    }
 
 @app.get("/health")
 def health():
