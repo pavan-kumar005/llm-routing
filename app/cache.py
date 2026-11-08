@@ -12,8 +12,8 @@ class TTLCache:
         self._data: OrderedDict = OrderedDict()
 
     @staticmethod
-    def make_key(model: str, prompt: str) -> str:
-        return hashlib.sha256(f"{model}\x00{prompt}".encode()).hexdigest()
+    def make_key(*parts) -> str:
+        return hashlib.sha256("\x00".join(str(p) for p in parts).encode()).hexdigest()
 
     def get(self, key: str):
         item = self._data.get(key)

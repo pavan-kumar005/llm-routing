@@ -25,7 +25,7 @@ def _wait_time(attempt: int, retry_after: str | None) -> float:
     return min(BACKOFF_BASE * (2 ** attempt) + random.uniform(0, 0.25), MAX_WAIT)
 
 
-async def call_groq(model: str, prompt: str) -> ProviderResult:
+async def call_groq(model: str, prompt: str, messages=None, max_tokens=None) -> ProviderResult:
     if not GROQ_API_KEY:
         raise ProviderError("GROQ_API_KEY is not set")
 
@@ -33,9 +33,11 @@ async def call_groq(model: str, prompt: str) -> ProviderResult:
     headers = {"Authorization": f"Bearer {GROQ_API_KEY}"}
     payload = {
         "model": model,
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": messages or [{"role": "user", "content": prompt}],
         "temperature": 0,
     }
+    if max_tokens:
+        payload["max_tokens"] = max_tokens
 
     last_error = "unknown error"
     for attempt in range(MAX_RETRIES + 1):

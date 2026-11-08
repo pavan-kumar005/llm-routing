@@ -1,7 +1,7 @@
 from app.providers.base import ProviderResult
 
 
-async def call_mock(model: str, prompt: str) -> ProviderResult:
+async def call_mock(model: str, prompt: str, messages=None, max_tokens=None) -> ProviderResult:
     answer = f"[mock answer from {model}] You asked: {prompt[:50]}"
     return ProviderResult(
         answer=answer,

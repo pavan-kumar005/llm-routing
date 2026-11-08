@@ -1,4 +1,5 @@
 import hashlib
+import json
 import secrets
 import time
 from contextlib import asynccontextmanager
@@ -19,7 +20,7 @@ from app.providers.groq_provider import ProviderError, call_groq
 from app.providers.mock_provider import call_mock
 from app.ratelimit import RateLimiter
 from app.routing.policies import choose_model
-from app.schemas import ChatRequest, ChatResponse
+from app.schemas import ChatRequest, ChatResponse, CompletionRequest
 
 cache = TTLCache(ttl=CACHE_TTL_SECONDS, max_items=1000)
 limiter = RateLimiter(window=60.0)
@@ -73,33 +74,43 @@ def require_admin(authorization: str = Header(default="")):
         raise HTTPException(status_code=403, detail="Admin only")
 
 
-async def call_provider(model: str, prompt: str):
+async def call_provider(model: str, prompt: str, **extra):
     if USE_MOCK:
-        return await call_mock(model, prompt)
-    return await call_groq(model, prompt)
+        return await call_mock(model, prompt, **extra)
+    return await call_groq(model, prompt, **extra)
 
 
-async def call_with_fallback(model: str, prompt: str):
+async def call_with_fallback(model: str, prompt: str, **extra):
     """Try the chosen model; if it fails after retries, try the other one."""
     try:
-        return await call_provider(model, prompt), model, None
+        return await call_provider(model, prompt, **extra), model, None
     except ProviderError as first_error:
         backup = CHEAP_MODEL if model == STRONG_MODEL else STRONG_MODEL
         if backup == model:
             raise
         try:
-            result = await call_provider(backup, prompt)
+            result = await call_provider(backup, prompt, **extra)
         except ProviderError:
             raise first_error
         return result, backup, f"fallback from {model} ({str(first_error)[:60]})"
 
 
-@app.post("/v1/chat", response_model=ChatResponse)
-async def chat(req: ChatRequest, caller: Caller = Depends(authenticate)):
-    if len(req.prompt) > MAX_PROMPT_CHARS:
+def policy_for(model_name: str) -> str:
+    m = model_name.lower()
+    if m in ("cheap", "always_cheap"):
+        return "always_cheap"
+    if m in ("strong", "always_strong"):
+        return "always_strong"
+    return "router"  # "auto" and any other name (e.g. a model name from an existing app)
+
+
+async def run_chat(caller: Caller, policy: str, prompt: str,
+                   messages=None, max_tokens=None) -> ChatResponse:
+    """Shared by /v1/chat and /v1/chat/completions."""
+    if len(prompt) > MAX_PROMPT_CHARS:
         raise HTTPException(
             status_code=413,
-            detail=f"Prompt too long: {len(req.prompt)} characters (maximum {MAX_PROMPT_CHARS}).",
+            detail=f"Prompt too long: {len(prompt)} characters (maximum {MAX_PROMPT_CHARS}).",
         )
 
     if caller.id not in ("owner", "local"):
@@ -115,15 +126,24 @@ async def chat(req: ChatRequest, caller: Caller = Depends(authenticate)):
     if caller.limit is not None and db.count_month(caller.id) >= caller.limit:
         raise HTTPException(status_code=429, detail="Monthly request limit reached")
 
-    model, reason = choose_model(req.policy, req.prompt)
+    model, reason = choose_model(policy, prompt)
     start = time.perf_counter()
 
-    cache_key = cache.make_key(model, req.prompt)
+    extra = {}
+    if messages is not None:
+        extra["messages"] = messages
+    if max_tokens is not None:
+        extra["max_tokens"] = max_tokens
+
+    # the key includes the caller, so customers never share cached answers
+    cache_key = cache.make_key(
+        caller.id, model, prompt, json.dumps(messages) if messages else "", max_tokens
+    )
     if CACHE_ENABLED:
         hit = cache.get(cache_key)
         if hit is not None:
             latency_ms = (time.perf_counter() - start) * 1000
-            db.log_request(req.policy, model, reason, 0, 0, latency_ms, 0.0,
+            db.log_request(policy, model, reason, 0, 0, latency_ms, 0.0,
                            "cache_hit", caller.id)
             return ChatResponse(
                 answer=hit.answer, model=model, route_reason=reason,
@@ -132,10 +152,10 @@ async def chat(req: ChatRequest, caller: Caller = Depends(authenticate)):
             )
 
     try:
-        result, used_model, fallback_note = await call_with_fallback(model, req.prompt)
+        result, used_model, fallback_note = await call_with_fallback(model, prompt, **extra)
     except ProviderError as e:
         latency_ms = (time.perf_counter() - start) * 1000
-        db.log_request(req.policy, model, reason, 0, 0, latency_ms, 0.0,
+        db.log_request(policy, model, reason, 0, 0, latency_ms, 0.0,
                        f"error: {e}"[:200], caller.id)
         # the real error is in your logs; customers get a generic message
         raise HTTPException(
@@ -148,7 +168,7 @@ async def chat(req: ChatRequest, caller: Caller = Depends(authenticate)):
         reason = f"{reason} | {fallback_note}"
 
     cost = calculate_cost(used_model, result.input_tokens, result.output_tokens)
-    db.log_request(req.policy, used_model, reason, result.input_tokens,
+    db.log_request(policy, used_model, reason, result.input_tokens,
                    result.output_tokens, latency_ms, cost, "success", caller.id)
 
     if CACHE_ENABLED:
@@ -163,6 +183,44 @@ async def chat(req: ChatRequest, caller: Caller = Depends(authenticate)):
         latency_ms=round(latency_ms, 2),
         cost_usd=cost,
     )
+
+
+@app.post("/v1/chat", response_model=ChatResponse)
+async def chat(req: ChatRequest, caller: Caller = Depends(authenticate)):
+    return await run_chat(caller, req.policy, req.prompt)
+
+
+@app.post("/v1/chat/completions")
+async def chat_completions(req: CompletionRequest, caller: Caller = Depends(authenticate)):
+    if req.stream:
+        raise HTTPException(status_code=400, detail="Streaming is not supported yet. Use stream=false.")
+
+    messages = [m.model_dump() for m in req.messages]
+    prompt = "\n".join(m["content"] for m in messages)
+    r = await run_chat(caller, policy_for(req.model), prompt, messages, req.max_tokens)
+
+    return {
+        "id": "chatcmpl-" + secrets.token_hex(12),
+        "object": "chat.completion",
+        "created": int(time.time()),
+        "model": r.model,
+        "choices": [{
+            "index": 0,
+            "message": {"role": "assistant", "content": r.answer},
+            "finish_reason": "stop",
+        }],
+        "usage": {
+            "prompt_tokens": r.input_tokens,
+            "completion_tokens": r.output_tokens,
+            "total_tokens": r.input_tokens + r.output_tokens,
+        },
+        "gateway": {
+            "route_reason": r.route_reason,
+            "cost_usd": r.cost_usd,
+            "cached": r.cached,
+            "latency_ms": r.latency_ms,
+        },
+    }
 
 
 @app.get("/v1/usage")
@@ -207,7 +265,7 @@ def home():
         "service": "LLM Router Gateway",
         "status": "ok",
         "docs": "/docs",
-        "endpoint": "POST /v1/chat",
+        "endpoint": "POST /v1/chat/completions",
     }
 
 
