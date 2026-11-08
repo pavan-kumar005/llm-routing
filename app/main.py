@@ -4,8 +4,10 @@ import secrets
 import time
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
+from pathlib import Path
 
 from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from app import db
@@ -24,6 +26,8 @@ from app.schemas import ChatRequest, ChatResponse, CompletionRequest
 
 cache = TTLCache(ttl=CACHE_TTL_SECONDS, max_items=1000)
 limiter = RateLimiter(window=60.0)
+
+LANDING = Path(__file__).parent / "static" / "index.html"
 
 
 @asynccontextmanager
@@ -259,14 +263,9 @@ def all_usage():
     return db.usage_all()
 
 
-@app.get("/")
+@app.get("/", include_in_schema=False)
 def home():
-    return {
-        "service": "LLM Router Gateway",
-        "status": "ok",
-        "docs": "/docs",
-        "endpoint": "POST /v1/chat/completions",
-    }
+    return FileResponse(LANDING, media_type="text/html")
 
 
 @app.get("/health")
