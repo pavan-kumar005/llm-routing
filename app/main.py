@@ -1,10 +1,10 @@
-import time
 import secrets
+import time
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Header, HTTPException
 
-from app.config import USE_MOCK, GATEWAY_API_KEY
+from app.config import GATEWAY_API_KEY, USE_MOCK
 from app.db import init_db, log_request
 from app.pricing import calculate_cost
 from app.providers.groq_provider import ProviderError, call_groq
@@ -22,17 +22,19 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="LLM Router Gateway", lifespan=lifespan)
 
 
+def require_key(authorization: str = Header(default="")):
+    if not GATEWAY_API_KEY:
+        return  # no key set: open (local development only)
+    token = authorization.removeprefix("Bearer ").strip()
+    if not secrets.compare_digest(token, GATEWAY_API_KEY):
+        raise HTTPException(status_code=401, detail="Invalid or missing API key")
+
+
 async def call_provider(model: str, prompt: str):
     if USE_MOCK:
         return await call_mock(model, prompt)
     return await call_groq(model, prompt)
 
-def require_key(authorization: str = Header(default="")):
-    if not GATEWAY_API_KEY:
-        return  # no key configured: open (local development only)
-    token = authorization.removeprefix("Bearer ").strip()
-    if not secrets.compare_digest(token, GATEWAY_API_KEY):
-        raise HTTPException(status_code=401, detail="Invalid or missing API key")
 
 @app.post("/v1/chat", response_model=ChatResponse, dependencies=[Depends(require_key)])
 async def chat(req: ChatRequest):

@@ -1,4 +1,4 @@
 policy,questions,errors,pass_rate_pct,cost_per_1k_usd,avg_latency_ms,strong_share_pct
-always_cheap,40,0,100.0,0.0278,466,0
-always_strong,40,0,100.0,0.0569,638,100
-router,40,0,100.0,0.0306,539,12
+always_cheap,59,0,100.0,0.0366,521,0
+always_strong,59,0,100.0,0.0689,674,100
+router,59,0,100.0,0.0403,500,15

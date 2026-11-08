@@ -38,3 +38,22 @@
 {"id":38,"type":"contains","difficulty":"easy","prompt":"In Python, what built-in function returns the number of items in a list?","answer":["len"]}
 {"id":39,"type":"contains","difficulty":"medium","prompt":"What does this Python expression evaluate to? \"abc\"[::-1] Answer with just the result.","answer":["cba"]}
 {"id":40,"type":"contains","difficulty":"easy","prompt":"What SQL keyword removes duplicate rows from a SELECT result?","answer":["distinct"]}
+{"id":41,"type":"number","difficulty":"hard","prompt":"How many times does the letter r appear in the word strawberry? Answer with just the number.","answer":3}
+{"id":42,"type":"number","difficulty":"hard","prompt":"What is 7919 * 6271? Answer with just the number.","answer":49660049}
+{"id":43,"type":"number","difficulty":"hard","prompt":"What is 48613 + 97284 - 15999? Answer with just the number.","answer":129898}
+{"id":44,"type":"number","difficulty":"hard","prompt":"How many prime numbers are there between 50 and 100? Answer with just the number.","answer":10}
+{"id":45,"type":"number","difficulty":"hard","prompt":"What is the 12th number in the Fibonacci sequence 1, 1, 2, 3, 5...? Answer with just the number.","answer":144}
+{"id":46,"type":"number","difficulty":"hard","prompt":"What is 13 factorial divided by 11 factorial? Answer with just the number.","answer":156}
+{"id":47,"type":"number","difficulty":"hard","prompt":"How many days are there from March 1 to June 1 in a non-leap year? Answer with just the number.","answer":92}
+{"id":48,"type":"number","difficulty":"hard","prompt":"What is the last digit of 7 to the power of 2026? Answer with just the number.","answer":9}
+{"id":49,"type":"number","difficulty":"hard","prompt":"What is the remainder when 2 to the power of 100 is divided by 7? Answer with just the number.","answer":2}
+{"id":50,"type":"number","difficulty":"hard","prompt":"How many positive divisors does 360 have? Answer with just the number.","answer":24}
+{"id":51,"type":"number","difficulty":"hard","prompt":"A car travels 120 km at 60 km/h, then 120 km at 40 km/h. What is its average speed for the whole trip in km/h? Answer with just the number.","answer":48}
+{"id":52,"type":"number","difficulty":"hard","prompt":"What is the sum of all the digits in the numbers from 1 to 50? Answer with just the number.","answer":330}
+{"id":53,"type":"number","difficulty":"hard","prompt":"If you flip a fair coin 3 times, what is the probability of exactly 2 heads? Answer as a decimal.","answer":0.375}
+{"id":54,"type":"number","difficulty":"hard","prompt":"Three consecutive integers sum to 111. What is the largest? Answer with just the number.","answer":38}
+{"id":55,"type":"number","difficulty":"hard","prompt":"Pipe A fills a tank in 6 hours and pipe B fills it in 3 hours. Working together, how many hours do they take? Answer with just the number.","answer":2}
+{"id":56,"type":"number","difficulty":"hard","prompt":"How many squares of any size are on a standard 8x8 chessboard? Answer with just the number.","answer":204}
+{"id":57,"type":"contains","difficulty":"hard","prompt":"Reverse the string 'router' and give just the result.","answer":["retuor"]}
+{"id":58,"type":"number","difficulty":"hard","prompt":"How many letters are in the word floccinaucinihilipilification? Answer with just the number.","answer":29}
+{"id":59,"type":"number","difficulty":"hard","prompt":"How many ways can 5 people be arranged in a row? Answer with just the number.","answer":120}
